@@ -374,9 +374,9 @@
     </style>
 </head>
 <body>
-    <div id="version">v4.0.7<br><a href="https://beijingfortime.wordpress.com/" target="_blank" rel="noopener noreferrer" style="font-size: 10px; opacity: 0.8; text-decoration: underline; color: #aaa;">官网</a></div>
+    <div id="version">v4.0.8<br><a href="https://beijingfortime.wordpress.com/" target="_blank" rel="noopener noreferrer" style="font-size: 10px; opacity: 0.8; text-decoration: underline; color: #aaa;">官网</a></div>
     <button id="fullscreen-btn">全屏</button>
-    <button id="dev-btn">启用开发者模式</button>
+    <button id="dev-btn">制作人员名单</button>
     <button id="check-update-btn" style="position: absolute; bottom: 20px; left: 150px; background-color: #333; color: #aaa; border: none; padding: 8px 16px; font-size: 14px; cursor: pointer; border-radius: 5px; transition: all 0.3s;">更新内容</button>
     
     <div id="time-container">
@@ -507,7 +507,7 @@
         // 显示检测环境动效
         function showEnvironmentCheck() {
             const content = `
-                <h2>开发者模式</h2>
+                <h2>制作人员名单</h2>
                 <div class="loading-container">
                     <div class="loading-spinner"></div>
                     <div class="loading-text">正在检测锁定状态</div>
@@ -526,11 +526,11 @@
             }, 2000);
         }
         
-        // 显示开发者模式确认弹窗
+        // 显示制作人员名单确认弹窗
         function showDevConfirm() {
             const content = `
-                <h2>开发者模式</h2>
-                <p>此版本为已发布版本，继续启用仅会显示制作者</p>
+                <h2>制作人员名单</h2>
+                <p>确定显示制作人员？</p>
                 <div class="btn-container">
                     <button class="btn btn-green" id="confirm-continue">继续</button>
                     <button class="btn btn-red" id="confirm-cancel">取消</button>
@@ -569,7 +569,7 @@
                 }
                 
                 const content = `
-                    <h2>开发者模式</h2>
+                    <h2>制作人员名单</h2>
                     <div class="loading-container">
                         <div class="error-check"></div>
                         <div class="error-text">锁定检测未通过</div>
@@ -619,9 +619,9 @@
             ` : '';
             
             const content = `
-                <h2>开发者模式</h2>
+                <h2>制作人员名单</h2>
                 ${successSection}
-                <p>请输入启用密码</p>
+                <p>请输入访问密码</p>
                 <div class="input-container">
                     <input type="password" id="password-input" placeholder="仅有一次机会">
                 </div>
@@ -705,7 +705,7 @@
             // 全屏状态变化事件
             document.addEventListener('fullscreenchange', updateFullscreenBtn);
             
-            // 开发者模式按钮事件
+            // 制作人员名单按钮事件
             devBtn.addEventListener('click', () => {
                 // 无论是否锁定，都直接开始环境检测
                 showEnvironmentCheck();
@@ -745,7 +745,7 @@
             });
         }
         
-        // 更新开发者模式按钮文本
+        // 更新制作人员名单按钮文本
         function updateDevBtnText() {
             if (isLocked()) {
                 const remaining = Math.ceil(getRemainingLockTime() / 1000);
@@ -756,7 +756,7 @@
                 devBtn.style.backgroundColor = '#555';
                 devBtn.style.color = '#888';
             } else {
-                devBtn.textContent = '启用开发者模式';
+                devBtn.textContent = '制作人员名单';
                 devBtn.disabled = false;
                 devBtn.style.backgroundColor = '#333';
                 devBtn.style.color = '#aaa';
