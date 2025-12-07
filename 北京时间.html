@@ -374,10 +374,10 @@
     </style>
 </head>
 <body>
-    <div id="version">v4.0.2<br><a href="https://beijingfortime.wordpress.com/" target="_blank" rel="noopener noreferrer" style="font-size: 10px; opacity: 0.8; text-decoration: underline; color: #aaa;">检查更新</a></div>
+    <div id="version">v4.0.5<br><a href="https://beijingfortime.wordpress.com/" target="_blank" rel="noopener noreferrer" style="font-size: 10px; opacity: 0.8; text-decoration: underline; color: #aaa;">官网</a></div>
     <button id="fullscreen-btn">全屏</button>
     <button id="dev-btn">启用开发者模式</button>
-    <button id="check-update-btn" style="position: absolute; bottom: 20px; left: 150px; background-color: #333; color: #aaa; border: none; padding: 8px 16px; font-size: 14px; cursor: pointer; border-radius: 5px; transition: all 0.3s;">检查更新</button>
+    <button id="check-update-btn" style="position: absolute; bottom: 20px; left: 150px; background-color: #333; color: #aaa; border: none; padding: 8px 16px; font-size: 14px; cursor: pointer; border-radius: 5px; transition: all 0.3s;">更新内容</button>
     
     <div id="time-container">
         <div id="date-info"></div>
@@ -917,32 +917,44 @@
             document.getElementById('update-later').addEventListener('click', hideModal);
         }
         
-        // 手动检查更新函数
+        // 显示更新内容函数
         function manualCheckUpdate() {
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.ready
-                    .then((registration) => {
-                        registration.update()
-                            .then(() => {
-                                // 检查是否有新的Service Worker正在等待
-                                if (registration.waiting) {
-                                    showUpdateNotification();
-                                } else {
-                                    alert('当前已是最新版本！');
-                                }
-                            })
-                            .catch(error => {
-                                console.log('检查更新失败:', error);
-                                alert('检查更新失败，请稍后重试');
-                            });
-                    })
-                    .catch(error => {
-                        console.log('Service Worker 未准备就绪:', error);
-                        alert('检查更新失败，请确保Service Worker已注册');
+            // 从update.json获取更新内容
+            fetch('update.json')
+                .then(response => response.json())
+                .then(data => {
+                    // 构建更新内容HTML
+                    let changelogHTML = '<ul style="list-style-type: none; padding: 0; margin: 20px 0;">';
+                    data.changelog.forEach(item => {
+                        changelogHTML += `<li style="margin: 8px 0; padding-left: 20px; position: relative;">\n`;
+                        changelogHTML += `  <span style="position: absolute; left: 0; color: #4CAF50;">•</span>\n`;
+                        changelogHTML += `  ${item}\n`;
+                        changelogHTML += `</li>`;
                     });
-            } else {
-                alert('您的浏览器不支持Service Worker，无法自动更新');
-            }
+                    changelogHTML += '</ul>';
+                    
+                    // 显示更新内容弹窗
+                    const content = `
+                        <h2>版本 ${data.version} 更新内容</h2>
+                        <div style="margin: 20px 0;">
+                            ${changelogHTML}
+                        </div>
+                        <div style="color: #aaa; font-size: 14px; margin-top: 20px;">
+                            最后更新：${data.lastUpdate}
+                        </div>
+                        <div class="btn-container" style="margin-top: 30px;">
+                            <button class="btn btn-green" id="update-content-ok">确定</button>
+                        </div>
+                    `;
+                    showModal(content);
+                    
+                    // 确定按钮事件
+                    document.getElementById('update-content-ok').addEventListener('click', hideModal);
+                })
+                .catch(error => {
+                    console.log('获取更新内容失败:', error);
+                    alert('获取更新内容失败，请稍后重试');
+                });
         }
         
         // 页面加载完成后初始化
