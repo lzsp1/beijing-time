@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>毫秒级北京时间</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23ffffff' stroke='%23ffd700' stroke-width='8'/%3E%3Ccircle cx='50' cy='50' r='3' fill='%23000000'/%3E%3Cline x1='50' y1='50' x2='50' y2='25' stroke='%23000000' stroke-width='3' stroke-linecap='round'/%3E%3Cline x1='50' y1='50' x2='70' y2='60' stroke='%23000000' stroke-width='3' stroke-linecap='round'/%3E%3Cline x1='50' y1='15' x2='50' y2='10' stroke='%23000000' stroke-width='2'/%3E%3Cline x1='85' y1='50' x2='90' y2='50' stroke='%23000000' stroke-width='2'/%3E%3Cline x1='50' y1='85' x2='50' y2='90' stroke='%23000000' stroke-width='2'/%3E%3Cline x1='15' y1='50' x2='10' y2='50' stroke='%23000000' stroke-width='2'/%3E%3Cline x1='25' y1='25' x2='20' y2='20' stroke='%23000000' stroke-width='1.5'/%3E%3Cline x1='75' y1='25' x2='80' y2='20' stroke='%23000000' stroke-width='1.5'/%3E%3Cline x1='75' y1='75' x2='80' y2='80' stroke='%23000000' stroke-width='1.5'/%3E%3Cline x1='25' y1='75' x2='20' y2='80' stroke='%23000000' stroke-width='1.5'/%3E%3C/svg%3E" type="image/svg+xml">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#000000">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        #time-container {
+            text-align: center;
+        }
+        
+        #date-info {
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+        
+        #time {
+            font-size: 120px;
+            font-weight: bold;
+        }
+        
+        #fullscreen-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: #ff4500;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        
+        #fullscreen-btn:hover {
+            background-color: #ff6347;
+        }
+        
+        #dev-btn {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background-color: #333;
+            color: #aaa;
+            border: none;
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        
+        #dev-btn:hover {
+            background-color: #444;
+            color: #ccc;
+        }
+        
+        /* 版本号样式 */
+        #version {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #aaa;
+            font-size: 12px;
+            font-family: Arial, sans-serif;
+            opacity: 0.8;
+        }
+        
+        /* 刷新次数提示样式 */
+        #refresh-counter {
+            color: #666;
+            font-size: 12px;
+            font-family: Arial, sans-serif;
+            opacity: 0.7;
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background-color: #222;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            min-width: 400px;
+            position: relative;
+        }
+        
+        .modal h2 {
+            margin-bottom: 20px;
+            color: #fff;
+        }
+        
+        .modal p {
+            margin-bottom: 20px;
+            color: #ddd;
+        }
+        
+        .btn-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .btn-green {
+            background-color: #4CAF50;
+            color: #fff;
+        }
+        
+        .btn-green:hover {
+            background-color: #45a049;
+        }
+        
+        .btn-red {
+            background-color: #f44336;
+            color: #fff;
+        }
+        
+        .btn-red:hover {
+            background-color: #da190b;
+        }
+        
+        .btn-blue {
+            background-color: #2196F3;
+            color: #fff;
+        }
+        
+        .btn-blue:hover {
+            background-color: #0b7dda;
+        }
+        
+        .input-container {
+            margin: 20px 0;
+        }
+        
+        .input-container input {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #555;
+            border-radius: 5px;
+            background-color: #333;
+            color: #fff;
+            width: 100%;
+            max-width: 300px;
+        }
+        
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #aaa;
+            font-size: 24px;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        
+        .close-btn:hover {
+            color: #fff;
+        }
+        
+        .error-msg {
+            color: #f44336;
+            margin: 10px 0;
+        }
+        
+        .creator-info {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .creator-name {
+            font-size: 18px;
+            color: #aaa;
+        }
+        
+        /* 检测环境动效样式 */
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #333;
+            border-top: 4px solid #4CAF50;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            font-size: 18px;
+            color: #ddd;
+            margin-bottom: 10px;
+        }
+        
+        .loading-dots {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .loading-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #4CAF50;
+            border-radius: 50%;
+            animation: bounce 1.4s ease-in-out infinite both;
+        }
+        
+        .loading-dot:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+        
+        .loading-dot:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+        
+        @keyframes bounce {
+            0%, 80%, 100% {
+                transform: scale(0);
+            }
+            40% {
+                transform: scale(1);
+            }
+        }
+        
+        /* 环境检测通过效果样式 */
+        .success-check {
+            width: 50px;
+            height: 50px;
+            background-color: #4CAF50;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            animation: successPulse 0.6s ease-in-out;
+        }
+        
+        @keyframes successPulse {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .success-check::after {
+            content: '✓';
+            color: white;
+            font-size: 30px;
+            font-weight: bold;
+        }
+        
+        .success-text {
+            font-size: 18px;
+            color: #4CAF50;
+            margin-bottom: 10px;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        /* 环境未通过效果样式 */
+        .error-check {
+            width: 50px;
+            height: 50px;
+            background-color: #f44336;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            animation: errorPulse 0.6s ease-in-out;
+        }
+        
+        @keyframes errorPulse {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .error-check::after {
+            content: '✗';
+            color: white;
+            font-size: 30px;
+            font-weight: bold;
+        }
+        
+        .error-text {
+            font-size: 18px;
+            color: #f44336;
+            margin-bottom: 10px;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="version">v4.0.2<br><a href="https://beijingfortime.wordpress.com/" target="_blank" rel="noopener noreferrer" style="font-size: 10px; opacity: 0.8; text-decoration: underline; color: #aaa;">检查更新</a></div>
+    <button id="fullscreen-btn">全屏</button>
+    <button id="dev-btn">启用开发者模式</button>
+    <button id="check-update-btn" style="position: absolute; bottom: 20px; left: 150px; background-color: #333; color: #aaa; border: none; padding: 8px 16px; font-size: 14px; cursor: pointer; border-radius: 5px; transition: all 0.3s;">检查更新</button>
+    
+    <div id="time-container">
+        <div id="date-info"></div>
+        <div id="time"></div>
+    </div>
+    
+    <!-- 弹窗容器 -->
+    <div id="modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <button class="close-btn" id="modal-close">&times;</button>
+            <div id="modal-body">
+                <!-- 弹窗内容将通过JavaScript动态生成 -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- 刷新次数提示 -->
+    <div id="refresh-container" style="position: absolute; bottom: 10px; right: 10px; display: flex; flex-direction: row; align-items: center; gap: 10px; width: auto;">
+        <div id="refresh-counter" style="display: inline-block;"></div>
+        <a href="#" id="reset-refresh" style="display: inline-block; color: #888; font-size: 12px; cursor: pointer; opacity: 0.7; text-decoration: underline;">重置</a>
+    </div>
+    
+    <script>
+        // 获取DOM元素
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
+        const devBtn = document.getElementById('dev-btn');
+        const modal = document.getElementById('modal');
+        const modalClose = document.getElementById('modal-close');
+        const modalBody = document.getElementById('modal-body');
+        const dateInfo = document.getElementById('date-info');
+        const timeElement = document.getElementById('time');
+        const refreshCounter = document.getElementById('refresh-counter');
+        const resetRefreshBtn = document.getElementById('reset-refresh');
+        
+        // 开发者模式状态
+        let errorCount = 0;
+        const MAX_ERRORS = 5;
+        const LOCK_TIME = 1 * 60 * 1000; // 1分钟
+        const PASSWORD = '1313113';
+        
+        // 获取本地存储的错误信息
+        function getErrorInfo() {
+            const info = localStorage.getItem('devErrorInfo');
+            if (info) {
+                return JSON.parse(info);
+            }
+            return { count: 0, lockUntil: 0 };
+        }
+        
+        // 保存错误信息到本地存储
+        function saveErrorInfo(info) {
+            localStorage.setItem('devErrorInfo', JSON.stringify(info));
+        }
+        
+        // 检查是否被锁定
+        function isLocked() {
+            const info = getErrorInfo();
+            return Date.now() < info.lockUntil;
+        }
+        
+        // 获取剩余锁定时间
+        function getRemainingLockTime() {
+            const info = getErrorInfo();
+            const remaining = info.lockUntil - Date.now();
+            return remaining > 0 ? remaining : 0;
+        }
+        
+        // 更新时间显示
+        function updateTime() {
+            const now = new Date();
+            
+            // 格式化日期信息
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const weekday = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][now.getDay()];
+            
+            // 计算第几周
+            const firstDay = new Date(year, 0, 1);
+            const pastDays = (now - firstDay) / (24 * 60 * 60 * 1000);
+            const weekNumber = Math.ceil((pastDays + firstDay.getDay() + 1) / 7);
+            
+            // 格式化时间
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const milliseconds = String(now.getMilliseconds()).padStart(3, '0');
+            
+            // 更新DOM
+            dateInfo.textContent = `${year}年${month}月${day}日 ${weekday}，第${weekNumber}周`;
+            timeElement.textContent = `${hours}:${minutes}:${seconds}.${milliseconds}`;
+        }
+        
+        // 全屏切换功能
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Error attempting to enable full-screen mode: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+        
+        // 更新全屏按钮文本
+        function updateFullscreenBtn() {
+            if (document.fullscreenElement) {
+                fullscreenBtn.textContent = '退出全屏';
+            } else {
+                fullscreenBtn.textContent = '全屏';
+            }
+        }
+        
+        // 显示弹窗
+        function showModal(content) {
+            modalBody.innerHTML = content;
+            modal.style.display = 'flex';
+        }
+        
+        // 隐藏弹窗
+        function hideModal() {
+            modal.style.display = 'none';
+        }
+        
+        // 显示检测环境动效
+        function showEnvironmentCheck() {
+            const content = `
+                <h2>开发者模式</h2>
+                <div class="loading-container">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">正在检测锁定状态</div>
+                    <div class="loading-dots">
+                        <div class="loading-dot"></div>
+                        <div class="loading-dot"></div>
+                        <div class="loading-dot"></div>
+                    </div>
+                </div>
+            `;
+            showModal(content);
+            
+            // 模拟检测环境，2秒后显示密码输入界面（带通过效果）
+            setTimeout(() => {
+                showPasswordInput(true);
+            }, 2000);
+        }
+        
+        // 显示开发者模式确认弹窗
+        function showDevConfirm() {
+            const content = `
+                <h2>开发者模式</h2>
+                <p>此版本为已发布版本，继续启用仅会显示制作者</p>
+                <div class="btn-container">
+                    <button class="btn btn-green" id="confirm-continue">继续</button>
+                    <button class="btn btn-red" id="confirm-cancel">取消</button>
+                </div>
+            `;
+            showModal(content);
+            
+            // 添加事件监听器
+            document.getElementById('confirm-continue').addEventListener('click', showEnvironmentCheck);
+            document.getElementById('confirm-cancel').addEventListener('click', hideModal);
+        }
+        
+        // 显示密码输入弹窗
+        function showPasswordInput(showSuccess = false) {
+            // 检查是否被锁定
+            if (isLocked()) {
+                let countdownTimer;
+                
+                // 更新剩余时间
+                function updateRemainingTime() {
+                    const remaining = Math.ceil(getRemainingLockTime() / 1000);
+                    if (remaining <= 0) {
+                        // 锁定时间已过，重新检测环境
+                        clearInterval(countdownTimer);
+                        hideModal();
+                        showEnvironmentCheck();
+                        return;
+                    }
+                    
+                    const minutes = Math.floor(remaining / 60);
+                    const seconds = remaining % 60;
+                    const timeElement = document.getElementById('lock-time');
+                    if (timeElement) {
+                        timeElement.textContent = `${minutes}分${seconds}秒`;
+                    }
+                }
+                
+                const content = `
+                    <h2>开发者模式</h2>
+                    <div class="loading-container">
+                        <div class="error-check"></div>
+                        <div class="error-text">锁定检测未通过</div>
+                        <p style="color: #ddd; margin-top: 10px;">请<span id="lock-time">0分0秒</span>后重试</p>
+                        <p style="color: #ddd; margin-top: 5px;">锁定时可正常使用时间</p>
+                    </div>
+                    <div class="btn-container" style="margin-top: 20px;">
+                        <button class="btn btn-red" id="lock-cancel">关闭</button>
+                    </div>
+                `;
+                showModal(content);
+                
+                // 初始化显示时间
+                updateRemainingTime();
+                // 启动倒计时定时器
+                countdownTimer = setInterval(updateRemainingTime, 1000);
+                
+                // 取消按钮事件，清除定时器
+                document.getElementById('lock-cancel').addEventListener('click', () => {
+                    clearInterval(countdownTimer);
+                    hideModal();
+                });
+                
+                // 关闭按钮事件，清除定时器
+                modalClose.addEventListener('click', () => {
+                    clearInterval(countdownTimer);
+                    hideModal();
+                });
+                
+                // 点击弹窗外部事件，清除定时器
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        clearInterval(countdownTimer);
+                        hideModal();
+                    }
+                });
+                
+                return;
+            }
+            
+            // 构建密码输入界面内容，根据showSuccess参数决定是否显示环境检测通过效果
+            const successSection = showSuccess ? `
+                <div class="loading-container" style="margin-bottom: 20px;">
+                    <div class="success-check"></div>
+                    <div class="success-text">锁定检测通过</div>
+                </div>
+            ` : '';
+            
+            const content = `
+                <h2>开发者模式</h2>
+                ${successSection}
+                <p>请输入启用密码</p>
+                <div class="input-container">
+                    <input type="password" id="password-input" placeholder="仅有一次机会">
+                </div>
+                <div class="error-msg" id="password-error" style="display: none;"></div>
+                <div class="btn-container">
+                    <button class="btn btn-blue" id="password-confirm">确定</button>
+                    <button class="btn btn-red" id="password-cancel">取消</button>
+                </div>
+            `;
+            showModal(content);
+            
+            // 添加事件监听器
+            const passwordInput = document.getElementById('password-input');
+            const passwordError = document.getElementById('password-error');
+            
+            document.getElementById('password-confirm').addEventListener('click', () => {
+                const password = passwordInput.value;
+                if (password === PASSWORD) {
+                    // 密码正确，重置错误计数
+                    saveErrorInfo({ count: 0, lockUntil: 0 });
+                    showCreatorInfo();
+                } else {
+                    // 密码错误，更新错误计数
+                    const errorInfo = getErrorInfo();
+                    errorInfo.count++;
+                    
+                    if (errorInfo.count >= MAX_ERRORS) {
+                        // 锁定10分钟
+                        errorInfo.lockUntil = Date.now() + LOCK_TIME;
+                        const remaining = Math.ceil(LOCK_TIME / 1000);
+                        const minutes = Math.floor(remaining / 60);
+                        const seconds = remaining % 60;
+                        passwordError.textContent = `密码错误，已被锁定${minutes}分${seconds}秒`;
+                        passwordError.style.display = 'block';
+                        
+                        // 1秒后显示锁定弹窗
+                        setTimeout(() => {
+                            showPasswordInput(false);
+                        }, 1000);
+                    } else {
+                        passwordError.textContent = `密码错误（${errorInfo.count}/${MAX_ERRORS}），剩余${MAX_ERRORS - errorInfo.count}次机会`;
+                        passwordError.style.display = 'block';
+                    }
+                    
+                    saveErrorInfo(errorInfo);
+                }
+            });
+            
+            document.getElementById('password-cancel').addEventListener('click', hideModal);
+        }
+        
+        // 显示制作者信息
+        function showCreatorInfo() {
+            const content = `
+                <div class="creator-info">制作者</div>
+                <div class="creator-name"> </div>
+                <div class="creator-name">HBC</div>
+                <div class="creator-name"> </div>
+                <div class="creator-name"> </div>
+                <div style="margin-top: 10px; color: #aaa; font-size: 16px;">感谢使用！</div>
+            `;
+            showModal(content);
+        }
+        
+        // 重置刷新次数功能
+        function resetRefreshCount() {
+            // 清除localStorage中的刷新信息
+            localStorage.removeItem('refreshInfo');
+            
+            // 更新显示
+            refreshCounter.textContent = '您今日已刷新 0 次';
+            refreshCounter.style.color = '#666';
+            refreshCounter.style.opacity = '0.7';
+        }
+        
+        // 初始化事件监听器
+        function initEventListeners() {
+            // 全屏按钮事件
+            fullscreenBtn.addEventListener('click', toggleFullscreen);
+            
+            // 全屏状态变化事件
+            document.addEventListener('fullscreenchange', updateFullscreenBtn);
+            
+            // 开发者模式按钮事件
+            devBtn.addEventListener('click', () => {
+                // 无论是否锁定，都直接开始环境检测
+                showEnvironmentCheck();
+            });
+            
+            // 检查更新按钮事件
+            const checkUpdateBtn = document.getElementById('check-update-btn');
+            if (checkUpdateBtn) {
+                checkUpdateBtn.addEventListener('click', manualCheckUpdate);
+                
+                // 添加鼠标悬停效果
+                checkUpdateBtn.addEventListener('mouseenter', function() {
+                    this.style.backgroundColor = '#444';
+                    this.style.color = '#ccc';
+                });
+                
+                checkUpdateBtn.addEventListener('mouseleave', function() {
+                    this.style.backgroundColor = '#333';
+                    this.style.color = '#aaa';
+                });
+            }
+            
+            // 关闭弹窗事件
+            modalClose.addEventListener('click', hideModal);
+            
+            // 点击弹窗外部关闭弹窗
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    hideModal();
+                }
+            });
+            
+            // 重置刷新次数按钮事件
+            resetRefreshBtn.addEventListener('click', (e) => {
+                e.preventDefault(); // 阻止默认跳转行为
+                resetRefreshCount();
+            });
+        }
+        
+        // 更新开发者模式按钮文本
+        function updateDevBtnText() {
+            if (isLocked()) {
+                const remaining = Math.ceil(getRemainingLockTime() / 1000);
+                const minutes = Math.floor(remaining / 60);
+                const seconds = remaining % 60;
+                devBtn.textContent = `锁定中 ${minutes}分${seconds}秒`;
+                devBtn.disabled = false;
+                devBtn.style.backgroundColor = '#555';
+                devBtn.style.color = '#888';
+            } else {
+                devBtn.textContent = '启用开发者模式';
+                devBtn.disabled = false;
+                devBtn.style.backgroundColor = '#333';
+                devBtn.style.color = '#aaa';
+            }
+        }
+        
+        // 刷新次数计数功能
+        function updateRefreshCount() {
+            // 获取当前日期（格式：YYYY-MM-DD）
+            const today = new Date().toISOString().split('T')[0];
+            
+            // 从localStorage获取刷新信息
+            let refreshInfo = localStorage.getItem('refreshInfo');
+            if (!refreshInfo) {
+                // 第一次使用，初始化
+                refreshInfo = { count: 0, date: today };
+            } else {
+                refreshInfo = JSON.parse(refreshInfo);
+            }
+            
+            // 检查是否为新的一天
+            if (refreshInfo.date !== today) {
+                // 新的一天，重置计数
+                refreshInfo.count = 0;
+                refreshInfo.date = today;
+            }
+            
+            // 刷新次数+1
+            refreshInfo.count++;
+            
+            // 保存到localStorage
+            localStorage.setItem('refreshInfo', JSON.stringify(refreshInfo));
+            
+            // 检查是否为不合规数字
+            const invalidNumbers = [78, 91, 9178, 7891, 250];
+            if (invalidNumbers.includes(refreshInfo.count)) {
+                refreshCounter.textContent = '刷新数字不合规';
+                // 可以添加样式变化，让提示更明显
+                refreshCounter.style.color = '#f44336';
+                refreshCounter.style.opacity = '0.9';
+            } else {
+                refreshCounter.textContent = `您今日已刷新 ${refreshInfo.count} 次`;
+                // 恢复默认样式
+                refreshCounter.style.color = '#666';
+                refreshCounter.style.opacity = '0.7';
+            }
+            
+            // 检查是否为感情数字，显示祝福弹窗
+            const loveNumbers = [520, 1314, 1314520, 5201314];
+            if (loveNumbers.includes(refreshInfo.count)) {
+                // 感情祝福语录数组
+                const loveMessages = [
+                    `您今日已刷新 ${refreshInfo.count} 次，愿你拥有美好的爱情！`,
+                    `您今日已刷新 ${refreshInfo.count} 次，愿天下有情人终成眷属！`,
+                    `您今日已刷新 ${refreshInfo.count} 次，愿你的生活充满爱与温暖！`,
+                    `您今日已刷新 ${refreshInfo.count} 次，愿每一个日子都有爱的陪伴！`,
+                    `您今日已刷新 ${refreshInfo.count} 次，愿爱与你同在！`,
+                    `您今日已刷新 ${refreshInfo.count} 次，愿你的爱情如蜜般甜美！`,
+                    `您今日已刷新 ${refreshInfo.count} 次，愿你被世界温柔以待！`,
+                    `您今日已刷新 ${refreshInfo.count} 次，愿你的心永远被爱填满！`
+                ];
+                
+                // 随机选择一条祝福语
+                const randomMessage = loveMessages[Math.floor(Math.random() * loveMessages.length)];
+                
+                // 显示祝福弹窗
+                const content = `
+                    <h2>💖 祝福</h2>
+                    <p style="font-size: 18px; color: #4CAF50; margin: 20px 0;">${randomMessage}</p>
+                    <div class="btn-container">
+                        <button class="btn btn-green" id="love-ok">好的</button>
+                    </div>
+                `;
+                showModal(content);
+                
+                // 好的按钮事件
+                document.getElementById('love-ok').addEventListener('click', hideModal);
+            }
+        }
+        
+        // 初始化
+        function init() {
+            // 启动时间更新
+            updateTime();
+            setInterval(updateTime, 1); // 毫秒级更新
+            
+            // 初始化事件监听器
+            initEventListeners();
+            
+            // 初始化全屏按钮文本
+            updateFullscreenBtn();
+            
+            // 初始化开发者模式按钮文本
+            updateDevBtnText();
+            
+            // 设置定时器，每秒更新一次开发者模式按钮文本
+            setInterval(updateDevBtnText, 1000);
+            
+            // 更新并显示刷新次数
+            updateRefreshCount();
+        }
+        
+        // Service Worker注册和自动更新功能
+        function registerServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('sw.js')
+                        .then((registration) => {
+                            console.log('Service Worker 注册成功:', registration.scope);
+                            
+                            // 监听更新事件
+                            registration.addEventListener('updatefound', () => {
+                                const newWorker = registration.installing;
+                                newWorker.addEventListener('statechange', () => {
+                                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                        // 新的Service Worker已安装，显示更新提示
+                                        showUpdateNotification();
+                                    }
+                                });
+                            });
+                        })
+                        .catch((error) => {
+                            console.log('Service Worker 注册失败:', error);
+                        });
+                });
+                
+                // 监听控制变化事件
+                let refreshing = false;
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (refreshing) return;
+                    refreshing = true;
+                    window.location.reload();
+                });
+            }
+        }
+        
+        // 显示更新通知
+        function showUpdateNotification() {
+            const content = `
+                <h2>🎉 发现新版本</h2>
+                <p>页面已更新，是否立即刷新获取最新内容？</p>
+                <div class="btn-container">
+                    <button class="btn btn-green" id="update-now">立即刷新</button>
+                    <button class="btn btn-red" id="update-later">稍后更新</button>
+                </div>
+            `;
+            showModal(content);
+            
+            // 添加事件监听
+            document.getElementById('update-now').addEventListener('click', () => {
+                hideModal();
+                // 发送消息给Service Worker，要求跳过等待
+                if (navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+                }
+            });
+            
+            document.getElementById('update-later').addEventListener('click', hideModal);
+        }
+        
+        // 手动检查更新函数
+        function manualCheckUpdate() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.ready
+                    .then((registration) => {
+                        registration.update()
+                            .then(() => {
+                                // 检查是否有新的Service Worker正在等待
+                                if (registration.waiting) {
+                                    showUpdateNotification();
+                                } else {
+                                    alert('当前已是最新版本！');
+                                }
+                            })
+                            .catch(error => {
+                                console.log('检查更新失败:', error);
+                                alert('检查更新失败，请稍后重试');
+                            });
+                    })
+                    .catch(error => {
+                        console.log('Service Worker 未准备就绪:', error);
+                        alert('检查更新失败，请确保Service Worker已注册');
+                    });
+            } else {
+                alert('您的浏览器不支持Service Worker，无法自动更新');
+            }
+        }
+        
+        // 页面加载完成后初始化
+        window.addEventListener('DOMContentLoaded', () => {
+            init();
+            registerServiceWorker();
+        });
+    </script>
+</body>
+</html>
