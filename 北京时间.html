@@ -374,7 +374,7 @@
     </style>
 </head>
 <body>
-    <div id="version">v4.0.5<br><a href="https://beijingfortime.wordpress.com/" target="_blank" rel="noopener noreferrer" style="font-size: 10px; opacity: 0.8; text-decoration: underline; color: #aaa;">官网</a></div>
+    <div id="version">v4.0.6<br><a href="https://beijingfortime.wordpress.com/" target="_blank" rel="noopener noreferrer" style="font-size: 10px; opacity: 0.8; text-decoration: underline; color: #aaa;">官网</a></div>
     <button id="fullscreen-btn">全屏</button>
     <button id="dev-btn">启用开发者模式</button>
     <button id="check-update-btn" style="position: absolute; bottom: 20px; left: 150px; background-color: #333; color: #aaa; border: none; padding: 8px 16px; font-size: 14px; cursor: pointer; border-radius: 5px; transition: all 0.3s;">更新内容</button>
@@ -935,14 +935,14 @@
                     
                     // 显示更新内容弹窗
                     const content = `
-                        <h2>版本 ${data.version} 更新内容</h2>
-                        <div style="margin: 20px 0;">
+                        <h2 style="text-align: left;">版本 ${data.version} 更新内容</h2>
+                        <div style="margin: 20px 0; text-align: left;">
                             ${changelogHTML}
                         </div>
-                        <div style="color: #aaa; font-size: 14px; margin-top: 20px;">
+                        <div style="color: #aaa; font-size: 14px; margin-top: 20px; text-align: left;">
                             最后更新：${data.lastUpdate}
                         </div>
-                        <div class="btn-container" style="margin-top: 30px;">
+                        <div class="btn-container" style="margin-top: 30px; justify-content: flex-start;">
                             <button class="btn btn-green" id="update-content-ok">确定</button>
                         </div>
                     `;

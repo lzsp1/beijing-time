@@ -1,11 +1,11 @@
 {
-  "version": "4.0.5",
+  "version": "4.0.6",
   "lastUpdate": "2025-12-07",
   "changelog": [
-    "删除了无用的代码文件",
-    "清理了旧的script.js和style.css文件",
-    "移除了测试文件",
-    "优化了项目文件结构"
+    "更新内容改为靠左显示",
+    "优化了更新内容弹窗的样式",
+    "调整了更新内容的对齐方式",
+    "更新按钮改为左对齐"
   ],
-  "serviceWorkerCache": "beijing-time-v4.0.5"
+  "serviceWorkerCache": "beijing-time-v4.0.6"
 }
