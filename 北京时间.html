@@ -509,6 +509,33 @@
         <div id="time"></div>
     </div>
     
+    <!-- 倒计时设置区域 -->
+    <div id="countdown-setting-area" style="margin-top: 20px; text-align: center; display: none; width: 100%; max-width: 500px;">
+        <div style="margin-bottom: 15px; color: #aaa; font-size: 16px;">设置倒计时时长</div>
+        <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px; align-items: center;">
+            <input type="number" id="countdown-hours" min="0" max="24" value="0" style="padding: 10px; font-size: 14px; border: 1px solid #555; border-radius: 5px; background-color: rgba(30, 30, 30, 0.8); color: #fff; width: 80px;">
+            <span style="color: #aaa; font-size: 18px;">:</span>
+            <input type="number" id="countdown-minutes" min="0" max="59" value="5" style="padding: 10px; font-size: 14px; border: 1px solid #555; border-radius: 5px; background-color: rgba(30, 30, 30, 0.8); color: #fff; width: 80px;">
+            <span style="color: #aaa; font-size: 18px;">:</span>
+            <input type="number" id="countdown-seconds" min="0" max="59" value="0" style="padding: 10px; font-size: 14px; border: 1px solid #555; border-radius: 5px; background-color: rgba(30, 30, 30, 0.8); color: #fff; width: 80px;">
+        </div>
+        <div style="display: flex; gap: 10px; justify-content: center;">
+            <button class="btn btn-green" id="start-countdown-btn" style="padding: 10px 20px; font-size: 14px;">开始倒计时</button>
+            <button class="btn btn-yellow" id="pause-countdown-btn" style="padding: 10px 20px; font-size: 14px; background-color: #ffc107; color: #000; transition: background-color 0.3s; display: none;">暂停</button>
+            <button class="btn btn-red" id="reset-countdown-btn" style="padding: 10px 20px; font-size: 14px;">重置倒计时</button>
+        </div>
+    </div>
+    
+    <!-- 正计时控制区域 -->
+    <div id="stopwatch-setting-area" style="margin-top: 20px; text-align: center; display: none; width: 100%; max-width: 500px;">
+        <div style="margin-bottom: 15px; color: #aaa; font-size: 16px;">正计时控制</div>
+        <div style="display: flex; gap: 10px; justify-content: center;">
+            <button class="btn btn-green" id="start-stopwatch-btn" style="padding: 10px 20px; font-size: 14px;">开始正计时</button>
+            <button class="btn btn-yellow" id="pause-stopwatch-btn" style="padding: 10px 20px; font-size: 14px; background-color: #ffc107; color: #000; transition: background-color 0.3s; display: none;">暂停</button>
+            <button class="btn btn-red" id="reset-stopwatch-btn" style="padding: 10px 20px; font-size: 14px;">重置正计时</button>
+        </div>
+    </div>
+    
     <!-- 弹窗容器 -->
     <div id="modal" class="modal" style="display: none;">
         <div class="modal-content">
@@ -548,10 +575,18 @@
         const msToggle = document.getElementById('ms-toggle');
         
         // 功能切换相关变量
-        let currentFeature = localStorage.getItem('currentFeature') || 'time'; // 'time' 或 'countdown'
+        let currentFeature = localStorage.getItem('currentFeature') || 'time'; // 'time'、'countdown' 或 'stopwatch'
         let countdownDuration = parseInt(localStorage.getItem('countdownDuration') || '5'); // 默认5分钟
         let countdownEndTime = null;
         let countdownInterval = null;
+        let isPaused = false;
+        let pausedRemainingTime = 0;
+        
+        // 正计时相关变量
+        let stopwatchStartTime = null;
+        let stopwatchElapsedTime = 0; // 已流逝的时间（毫秒）
+        let stopwatchIsRunning = false;
+        let stopwatchIsPaused = false;
         
         // 开发者模式状态
         let errorCount = 0;
@@ -653,6 +688,399 @@
         // 隐藏弹窗
         function hideModal() {
             modal.style.display = 'none';
+        }
+        
+        // 切换功能
+        function switchFeature(feature) {
+            if (currentFeature === feature) return;
+            
+            currentFeature = feature;
+            localStorage.setItem('currentFeature', feature);
+            
+            // 清理之前的定时器
+            clearInterval(window.timeInterval);
+            
+            // 获取设置区域
+            const countdownSettingArea = document.getElementById('countdown-setting-area');
+            const stopwatchSettingArea = document.getElementById('stopwatch-setting-area');
+            
+            if (feature === 'time') {
+                // 切换到北京时间
+                updateTime();
+                const updateInterval = msToggle.checked ? 1 : 1000;
+                window.timeInterval = setInterval(updateTime, updateInterval);
+                // 显示日期信息
+                dateInfo.style.display = 'block';
+                // 隐藏所有设置区域
+                if (countdownSettingArea) {
+                    countdownSettingArea.style.display = 'none';
+                }
+                if (stopwatchSettingArea) {
+                    stopwatchSettingArea.style.display = 'none';
+                }
+            } else if (feature === 'countdown') {
+                // 切换到倒计时
+                // 初始化倒计时，默认显示0:0:0.000
+                countdownEndTime = null;
+                updateCountdown();
+                const updateInterval = msToggle.checked ? 100 : 1000;
+                window.timeInterval = setInterval(updateCountdown, updateInterval);
+                // 隐藏日期信息
+                dateInfo.style.display = 'none';
+                // 显示倒计时设置区域，隐藏正计时设置区域
+                if (countdownSettingArea) {
+                    countdownSettingArea.style.display = 'block';
+                    // 加载保存的倒计时时长
+                    loadCountdownDuration();
+                }
+                if (stopwatchSettingArea) {
+                    stopwatchSettingArea.style.display = 'none';
+                }
+            } else if (feature === 'stopwatch') {
+                // 切换到正计时
+                // 初始化正计时，显示0:0:0.000
+                resetStopwatch();
+                const updateInterval = msToggle.checked ? 100 : 1000;
+                window.timeInterval = setInterval(updateStopwatch, updateInterval);
+                // 隐藏日期信息
+                dateInfo.style.display = 'none';
+                // 显示正计时设置区域，隐藏倒计时设置区域
+                if (stopwatchSettingArea) {
+                    stopwatchSettingArea.style.display = 'block';
+                }
+                if (countdownSettingArea) {
+                    countdownSettingArea.style.display = 'none';
+                }
+            }
+        }
+        
+        // 加载保存的倒计时时长
+        function loadCountdownDuration() {
+            const savedDuration = localStorage.getItem('countdownDuration');
+            let totalSeconds = savedDuration ? parseInt(savedDuration) * 60 : 300; // 默认5分钟
+            
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            
+            const hoursInput = document.getElementById('countdown-hours');
+            const minutesInput = document.getElementById('countdown-minutes');
+            const secondsInput = document.getElementById('countdown-seconds');
+            
+            if (hoursInput) hoursInput.value = hours;
+            if (minutesInput) minutesInput.value = minutes;
+            if (secondsInput) secondsInput.value = seconds;
+            
+            // 更新显示
+            updateCountdown();
+        }
+        
+        // 更新预览倒计时显示
+        function updatePreviewCountdown() {
+            // 只有在倒计时未开始且未暂停时才更新预览
+            if (countdownEndTime === null && !isPaused) {
+                const countdownHours = document.getElementById('countdown-hours');
+                const countdownMinutes = document.getElementById('countdown-minutes');
+                const countdownSeconds = document.getElementById('countdown-seconds');
+                
+                if (countdownHours && countdownMinutes && countdownSeconds) {
+                    const hours = parseInt(countdownHours.value) || 0;
+                    const minutes = parseInt(countdownMinutes.value) || 0;
+                    const seconds = parseInt(countdownSeconds.value) || 0;
+                    
+                    // 计算总毫秒数
+                    const totalMilliseconds = (hours * 3600 + minutes * 60 + seconds) * 1000;
+                    
+                    // 显示预览时间
+                    const remaining = totalMilliseconds;
+                    const previewHours = Math.floor(remaining / (1000 * 60 * 60));
+                    const previewMinutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+                    const previewSeconds = Math.floor((remaining % (1000 * 60)) / 1000);
+                    const previewMilliseconds = Math.floor((remaining % 1000) / 10);
+                    
+                    let timeString;
+                    if (msToggle.checked) {
+                        timeString = `${previewHours.toString().padStart(2, '0')}:${previewMinutes.toString().padStart(2, '0')}:${previewSeconds.toString().padStart(2, '0')}.${previewMilliseconds.toString().padStart(2, '0')}`;
+                    } else {
+                        timeString = `${previewHours.toString().padStart(2, '0')}:${previewMinutes.toString().padStart(2, '0')}:${previewSeconds.toString().padStart(2, '0')}`;
+                    }
+                    
+                    timeElement.textContent = timeString;
+                }
+            }
+        }
+        
+        // 开始倒计时
+        function startCountdown() {
+            const hoursInput = document.getElementById('countdown-hours');
+            const minutesInput = document.getElementById('countdown-minutes');
+            const secondsInput = document.getElementById('countdown-seconds');
+            const pauseBtn = document.getElementById('pause-countdown-btn');
+            
+            if (hoursInput && minutesInput && secondsInput) {
+                if (isPaused) {
+                    // 继续暂停的倒计时
+                    countdownEndTime = Date.now() + pausedRemainingTime;
+                    isPaused = false;
+                    pausedRemainingTime = 0;
+                    if (pauseBtn) {
+                        pauseBtn.textContent = '暂停';
+                    }
+                } else {
+                    // 开始新的倒计时
+                    const hours = parseInt(hoursInput.value) || 0;
+                    const minutes = parseInt(minutesInput.value) || 0;
+                    const seconds = parseInt(secondsInput.value) || 0;
+                    
+                    // 计算总时长（分钟）用于保存
+                    const totalMinutes = hours * 60 + minutes + seconds / 60;
+                    countdownDuration = Math.round(totalMinutes);
+                    localStorage.setItem('countdownDuration', countdownDuration);
+                    
+                    // 计算总时长（毫秒）用于倒计时
+                    const totalMilliseconds = (hours * 3600 + minutes * 60 + seconds) * 1000;
+                    countdownEndTime = Date.now() + totalMilliseconds;
+                }
+                
+                // 显示暂停按钮
+                if (pauseBtn) {
+                    pauseBtn.style.display = 'inline-block';
+                }
+                
+                updateCountdown();
+            }
+        }
+        
+        // 重置倒计时
+        function resetCountdown() {
+            countdownEndTime = null;
+            isPaused = false;
+            pausedRemainingTime = 0;
+            
+            // 将输入框的值归零
+            const hoursInput = document.getElementById('countdown-hours');
+            const minutesInput = document.getElementById('countdown-minutes');
+            const secondsInput = document.getElementById('countdown-seconds');
+            if (hoursInput) hoursInput.value = 0;
+            if (minutesInput) minutesInput.value = 0;
+            if (secondsInput) secondsInput.value = 0;
+            
+            // 隐藏暂停按钮
+            const pauseBtn = document.getElementById('pause-countdown-btn');
+            if (pauseBtn) {
+                pauseBtn.style.display = 'none';
+            }
+            
+            updateCountdown();
+        }
+        
+        // 暂停/继续倒计时
+        function pauseCountdown() {
+            const pauseBtn = document.getElementById('pause-countdown-btn');
+            
+            if (isPaused) {
+                // 继续倒计时
+                countdownEndTime = Date.now() + pausedRemainingTime;
+                isPaused = false;
+                pausedRemainingTime = 0;
+                if (pauseBtn) {
+                    pauseBtn.textContent = '暂停';
+                }
+            } else {
+                // 暂停倒计时
+                const now = Date.now();
+                pausedRemainingTime = Math.max(0, countdownEndTime - now);
+                countdownEndTime = null;
+                isPaused = true;
+                if (pauseBtn) {
+                    pauseBtn.textContent = '继续';
+                }
+            }
+        }
+        
+        // 更新倒计时显示
+        function updateCountdown() {
+            let remaining;
+            
+            if (countdownEndTime === null) {
+                if (isPaused) {
+                    // 如果倒计时暂停，显示暂停时的剩余时间
+                    remaining = pausedRemainingTime;
+                } else {
+                    // 如果倒计时未开始，显示用户输入的倒计时时长
+                    const countdownHours = document.getElementById('countdown-hours');
+                    const countdownMinutes = document.getElementById('countdown-minutes');
+                    const countdownSeconds = document.getElementById('countdown-seconds');
+                    
+                    if (countdownHours && countdownMinutes && countdownSeconds) {
+                        const hours = parseInt(countdownHours.value) || 0;
+                        const minutes = parseInt(countdownMinutes.value) || 0;
+                        const seconds = parseInt(countdownSeconds.value) || 0;
+                        remaining = (hours * 3600 + minutes * 60 + seconds) * 1000;
+                    } else {
+                        remaining = 0;
+                    }
+                }
+            } else {
+                // 否则计算剩余时间
+                const now = Date.now();
+                remaining = Math.max(0, countdownEndTime - now);
+                
+                // 如果倒计时结束，重置为未开始状态
+                if (remaining <= 0) {
+                    countdownEndTime = null;
+                    isPaused = false;
+                    pausedRemainingTime = 0;
+                    // 隐藏暂停按钮
+                    const pauseBtn = document.getElementById('pause-countdown-btn');
+                    if (pauseBtn) {
+                        pauseBtn.style.display = 'none';
+                    }
+                    
+                    // 显示用户输入的倒计时时长
+                    const countdownHours = document.getElementById('countdown-hours');
+                    const countdownMinutes = document.getElementById('countdown-minutes');
+                    const countdownSeconds = document.getElementById('countdown-seconds');
+                    
+                    if (countdownHours && countdownMinutes && countdownSeconds) {
+                        const hours = parseInt(countdownHours.value) || 0;
+                        const minutes = parseInt(countdownMinutes.value) || 0;
+                        const seconds = parseInt(countdownSeconds.value) || 0;
+                        remaining = (hours * 3600 + minutes * 60 + seconds) * 1000;
+                    } else {
+                        remaining = 0;
+                    }
+                }
+            }
+            
+            const hours = Math.floor(remaining / (1000 * 60 * 60));
+            const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+            const milliseconds = Math.floor((remaining % 1000) / 10);
+            
+            let timeString;
+            // 总是显示小时、分钟、秒，根据毫秒显示设置决定是否显示毫秒
+            if (msToggle.checked) {
+                timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(2, '0')}`;
+            } else {
+                timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+            
+            timeElement.textContent = timeString;
+        }
+        
+        // 更新正计时显示
+        function updateStopwatch() {
+            let elapsed;
+            
+            if (stopwatchIsRunning && stopwatchStartTime) {
+                // 如果正计时正在运行，计算从开始到现在的时间
+                elapsed = stopwatchElapsedTime + (Date.now() - stopwatchStartTime);
+            } else {
+                // 否则显示已流逝的时间（包括暂停状态）
+                elapsed = stopwatchElapsedTime;
+            }
+            
+            const hours = Math.floor(elapsed / (1000 * 60 * 60));
+            const minutes = Math.floor((elapsed % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((elapsed % (1000 * 60)) / 1000);
+            const milliseconds = Math.floor((elapsed % 1000) / 10);
+            
+            let timeString;
+            // 总是显示小时、分钟、秒，根据毫秒显示设置决定是否显示毫秒
+            if (msToggle.checked) {
+                timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(2, '0')}`;
+            } else {
+                timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+            
+            timeElement.textContent = timeString;
+        }
+        
+        // 开始正计时
+        function startStopwatch() {
+            const startBtn = document.getElementById('start-stopwatch-btn');
+            const pauseBtn = document.getElementById('pause-stopwatch-btn');
+            
+            if (stopwatchIsPaused) {
+                // 继续暂停的正计时
+                stopwatchStartTime = Date.now();
+                stopwatchIsRunning = true;
+                stopwatchIsPaused = false;
+            } else {
+                // 开始新的正计时
+                stopwatchStartTime = Date.now();
+                stopwatchIsRunning = true;
+                stopwatchIsPaused = false;
+            }
+            
+            // 显示暂停按钮，隐藏开始按钮
+            if (pauseBtn) {
+                pauseBtn.style.display = 'inline-block';
+                pauseBtn.textContent = '暂停';
+            }
+            if (startBtn) {
+                startBtn.style.display = 'none';
+            }
+            
+            updateStopwatch();
+        }
+        
+        // 重置正计时
+        function resetStopwatch() {
+            const startBtn = document.getElementById('start-stopwatch-btn');
+            const pauseBtn = document.getElementById('pause-stopwatch-btn');
+            
+            stopwatchIsRunning = false;
+            stopwatchIsPaused = false;
+            stopwatchStartTime = null;
+            stopwatchElapsedTime = 0;
+            
+            // 显示开始按钮，隐藏暂停按钮
+            if (startBtn) {
+                startBtn.style.display = 'inline-block';
+            }
+            if (pauseBtn) {
+                pauseBtn.style.display = 'none';
+            }
+            
+            updateStopwatch();
+        }
+        
+        // 暂停/继续正计时
+        function pauseStopwatch() {
+            const startBtn = document.getElementById('start-stopwatch-btn');
+            const pauseBtn = document.getElementById('pause-stopwatch-btn');
+            
+            if (stopwatchIsPaused) {
+                // 继续正计时
+                stopwatchStartTime = Date.now();
+                stopwatchIsRunning = true;
+                stopwatchIsPaused = false;
+                if (pauseBtn) {
+                    pauseBtn.textContent = '暂停';
+                }
+                if (startBtn) {
+                    startBtn.style.display = 'none';
+                }
+                if (pauseBtn) {
+                    pauseBtn.style.display = 'inline-block';
+                }
+            } else {
+                // 暂停正计时
+                if (stopwatchIsRunning && stopwatchStartTime) {
+                    stopwatchElapsedTime += (Date.now() - stopwatchStartTime);
+                }
+                stopwatchIsRunning = false;
+                stopwatchIsPaused = true;
+                stopwatchStartTime = null;
+                if (pauseBtn) {
+                    pauseBtn.textContent = '继续';
+                }
+                if (startBtn) {
+                    startBtn.style.display = 'none';
+                }
+            }
         }
         
         // 显示检测环境动效
@@ -854,6 +1282,40 @@
                             </div>
                         </div>
                         
+                        <!-- 功能设置 -->
+                        <div id="settings-features" class="settings-content" style="display: none;">
+                            <h3 style="margin-bottom: 25px; color: #fff; font-size: 18px;">功能</h3>
+                            <div class="option-item" style="margin-bottom: 25px;">
+                                <span class="option-label" style="font-size: 16px; margin-bottom: 15px; display: block;">功能切换</span>
+                                <div style="display: flex; gap: 15px;">
+                                    <button class="feature-btn time-active" data-feature="time" style="padding: 12px 24px; border: none; border-radius: 5px; cursor: pointer; transition: all 0.3s; background-color: ${currentFeature === 'time' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(50, 50, 50, 0.8)'};
+ color: ${currentFeature === 'time' ? '#fff' : '#aaa'};">北京时间</button>
+                                    <button class="feature-btn countdown-active" data-feature="countdown" style="padding: 12px 24px; border: none; border-radius: 5px; cursor: pointer; transition: all 0.3s; background-color: ${currentFeature === 'countdown' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(50, 50, 50, 0.8)'};
+ color: ${currentFeature === 'countdown' ? '#fff' : '#aaa'};">倒计时</button>
+                                    <button class="feature-btn stopwatch-active" data-feature="stopwatch" style="padding: 12px 24px; border: none; border-radius: 5px; cursor: pointer; transition: all 0.3s; background-color: ${currentFeature === 'stopwatch' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(50, 50, 50, 0.8)'};
+ color: ${currentFeature === 'stopwatch' ? '#fff' : '#aaa'};">正计时</button>
+                                </div>
+                            </div>
+                            
+                            <!-- 学校模式设置 -->
+                            <div class="option-item" style="margin-bottom: 25px; padding-top: 20px; border-top: 1px solid #333;">
+                                <span class="option-label" style="font-size: 16px; margin-bottom: 15px; display: block;">学校模式</span>
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="school-mode-toggle" ${localStorage.getItem('schoolMode') === 'true' ? 'checked' : ''}>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- 学校模式功能区 -->
+                            <div id="school-mode-features" class="option-item" style="${localStorage.getItem('schoolMode') === 'true' ? 'display: block;' : 'display: none;'} margin-bottom: 25px; padding: 15px; background-color: rgba(50, 50, 50, 0.5); border-radius: 8px;">
+                                <div style="display: flex; gap: 15px; justify-content: center; align-items: center; margin-top: 10px;">
+                                    <button class="btn btn-blue" id="exam-mode-btn" style="padding: 12px 24px; font-size: 16px;">${localStorage.getItem('examMode') === 'true' ? '关闭考试模式' : '启动考试模式'}</button>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <!-- 关于设置 -->
                         <div id="settings-about" class="settings-content" style="display: none;">
                             <h3 style="margin-bottom: 25px; color: #fff; font-size: 18px;">关于</h3>
@@ -861,8 +1323,15 @@
                                 <button class="btn btn-blue" style="width: 100%; padding: 12px; font-size: 16px;" id="show-creator-btn">制作人员名单</button>
                             </div>
                             <div class="option-item" style="text-align: center; margin-top: 30px;">
-                                <div style="color: #aaa; font-size: 14px; margin-bottom: 15px;">v4.0.12</div>
+                                <div style="color: #aaa; font-size: 14px; margin-bottom: 15px;">v4.1.0</div>
                                 <a href="https://beijingfortime.wordpress.com/" target="_blank" rel="noopener noreferrer" style="font-size: 14px; opacity: 0.8; text-decoration: underline; color: #aaa;">官网</a>
+                            </div>
+                            <div style="text-align: center; color: #888; font-size: 12px; margin-top: 20px;">
+                                此程序免费试用，
+                                <a href="https://ifdian.net/order/create?plan_id=b7c1d2cecf5b11ef88ad52540025c377&product_type=0&remark=&affiliate_code=" 
+                                   target="_blank" rel="noopener noreferrer" style="color: #4CAF50; text-decoration: underline;">
+                                    赞助作者
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -893,18 +1362,89 @@
                 msToggle.checked = e.target.checked;
                 // 保存设置到本地存储
                 localStorage.setItem('showMilliseconds', msToggle.checked);
-                // 更新时间显示
-                updateTime();
+                // 更新显示
+                if (currentFeature === 'time') {
+                    updateTime();
+                } else if (currentFeature === 'countdown') {
+                    updateCountdown();
+                } else if (currentFeature === 'stopwatch') {
+                    updateStopwatch();
+                }
                 // 重新设置更新频率
                 clearInterval(window.timeInterval);
-                const updateInterval = msToggle.checked ? 1 : 1000;
-                window.timeInterval = setInterval(updateTime, updateInterval);
+                const updateInterval = msToggle.checked ? 100 : 1000;
+                if (currentFeature === 'time') {
+                    window.timeInterval = setInterval(updateTime, updateInterval);
+                } else if (currentFeature === 'countdown') {
+                    window.timeInterval = setInterval(updateCountdown, updateInterval);
+                } else if (currentFeature === 'stopwatch') {
+                    window.timeInterval = setInterval(updateStopwatch, updateInterval);
+                }
             });
             
             document.getElementById('show-creator-btn').addEventListener('click', () => {
                 hideModal();
                 showEnvironmentCheck();
             });
+            
+            // 学校模式开关事件
+            document.getElementById('school-mode-toggle').addEventListener('change', (e) => {
+                const isSchoolMode = e.target.checked;
+                localStorage.setItem('schoolMode', isSchoolMode);
+                
+                // 显示/隐藏学校模式功能区
+                const schoolModeFeatures = document.getElementById('school-mode-features');
+                if (schoolModeFeatures) {
+                    schoolModeFeatures.style.display = isSchoolMode ? 'block' : 'none';
+                }
+                
+                // 如果关闭学校模式，自动关闭考试模式
+                if (!isSchoolMode) {
+                    const isExamMode = localStorage.getItem('examMode') === 'true';
+                    if (isExamMode) {
+                        deactivateExamMode();
+                        // 更新按钮文本
+                        const examModeBtn = document.getElementById('exam-mode-btn');
+                        if (examModeBtn) {
+                            examModeBtn.textContent = '启动考试模式';
+                        }
+                    }
+                }
+            });
+            
+            // 考试模式按钮事件
+            document.getElementById('exam-mode-btn').addEventListener('click', () => {
+                const currentExamMode = localStorage.getItem('examMode') === 'true';
+                const newExamMode = !currentExamMode;
+                
+                if (newExamMode) {
+                    // 启动考试模式
+                    showModal(`
+                        <h2>考试模式</h2>
+                        <p>确认启动考试模式？</p>
+                        <p style="color: #aaa; font-size: 14px; margin: 10px 0;">启动后将隐藏所有不必要的元素，仅显示时间</p>
+                        <div class="btn-container">
+                            <button class="btn btn-green" id="confirm-exam-start">确定</button>
+                            <button class="btn btn-red" id="confirm-exam-cancel">取消</button>
+                        </div>
+                    `);
+                    
+                    document.getElementById('confirm-exam-start').addEventListener('click', () => {
+                        hideModal();
+                        activateExamMode();
+                    });
+                    
+                    document.getElementById('confirm-exam-cancel').addEventListener('click', hideModal);
+                } else {
+                    // 关闭考试模式
+                    deactivateExamMode();
+                    // 更新按钮文本
+                    document.getElementById('exam-mode-btn').textContent = '启动考试模式';
+                    hideModal();
+                }
+            });
+            
+            
             
             // 添加设置分类切换事件
             const navItems = document.querySelectorAll('.settings-nav-item');
@@ -929,9 +1469,36 @@
                     
                     // 显示当前内容
                     const category = item.dataset.category;
-                    document.getElementById(`settings-${category}`).style.display = 'block';
+                    const contentElement = document.getElementById(`settings-${category}`);
+                    if (contentElement) {
+                        contentElement.style.display = 'block';
+                    }
                 });
             });
+            // 处理功能切换事件
+            // 这里简化处理，直接使用事件委托
+            const featuresContent = document.getElementById('settings-features');
+            if (featuresContent) {
+                featuresContent.addEventListener('click', (e) => {
+                    // 功能切换按钮点击
+                    if (e.target.classList.contains('feature-btn')) {
+                        const feature = e.target.dataset.feature;
+                        // 更新所有功能按钮样式
+                        const featureBtns = featuresContent.querySelectorAll('.feature-btn');
+                        featureBtns.forEach(btn => {
+                            if (btn.dataset.feature === feature) {
+                                btn.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+                                btn.style.color = '#fff';
+                            } else {
+                                btn.style.backgroundColor = 'rgba(50, 50, 50, 0.8)';
+                                btn.style.color = '#aaa';
+                            }
+                        });
+                        // 切换功能
+                        switchFeature(feature);
+                    }
+                });
+            }
         }
         
         // 显示制作者信息
@@ -945,6 +1512,93 @@
                 <div style="margin-top: 10px; color: #aaa; font-size: 16px;">感谢使用！</div>
             `;
             showModal(content);
+        }
+        
+        // 考试模式提示元素
+        let examModeHint = null;
+        
+        // 激活考试模式
+        function activateExamMode() {
+            localStorage.setItem('examMode', 'true');
+            
+            // 隐藏多余元素
+            const elementsToHide = [
+                'check-update-btn',
+                'fullscreen-btn',
+                'refresh-container',
+                'countdown-setting-area',
+                'stopwatch-setting-area'
+            ];
+            
+            elementsToHide.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.style.display = 'none';
+                }
+            });
+            
+            // 确保设置按钮可见
+            const settingsBtn = document.getElementById('settings-btn');
+            if (settingsBtn) {
+                settingsBtn.style.display = 'block';
+            }
+            
+            // 添加恢复提示
+            if (!examModeHint) {
+                examModeHint = document.createElement('div');
+                examModeHint.id = 'exam-mode-hint';
+                examModeHint.style.cssText = `
+                    margin-top: 30px;
+                    color: #aaa;
+                    font-size: 16px;
+                    text-align: center;
+                `;
+                examModeHint.textContent = '恢复正常：更多>功能>关闭考试模式';
+                
+                const timeContainer = document.getElementById('time-container');
+                if (timeContainer) {
+                    timeContainer.parentNode.insertBefore(examModeHint, timeContainer.nextSibling);
+                }
+            } else {
+                examModeHint.style.display = 'block';
+            }
+        }
+        
+        // 关闭考试模式
+        function deactivateExamMode() {
+            localStorage.setItem('examMode', 'false');
+            
+            // 显示所有元素
+            const elementsToShow = [
+                'check-update-btn',
+                'fullscreen-btn',
+                'refresh-container'
+            ];
+            
+            elementsToShow.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.style.display = '';
+                }
+            });
+            
+            // 根据当前功能显示相应的设置区域
+            if (currentFeature === 'countdown') {
+                const countdownArea = document.getElementById('countdown-setting-area');
+                if (countdownArea) {
+                    countdownArea.style.display = 'block';
+                }
+            } else if (currentFeature === 'stopwatch') {
+                const stopwatchArea = document.getElementById('stopwatch-setting-area');
+                if (stopwatchArea) {
+                    stopwatchArea.style.display = 'block';
+                }
+            }
+            
+            // 隐藏恢复提示
+            if (examModeHint) {
+                examModeHint.style.display = 'none';
+            }
         }
         
         // 重置刷新次数功能
@@ -1009,6 +1663,56 @@
                 e.preventDefault(); // 阻止默认跳转行为
                 resetRefreshCount();
             });
+            
+            // 开始倒计时按钮事件
+            const startCountdownBtn = document.getElementById('start-countdown-btn');
+            if (startCountdownBtn) {
+                startCountdownBtn.addEventListener('click', startCountdown);
+            }
+            
+            // 重置倒计时按钮事件
+            const resetCountdownBtn = document.getElementById('reset-countdown-btn');
+            if (resetCountdownBtn) {
+                resetCountdownBtn.addEventListener('click', resetCountdown);
+            }
+            
+            // 暂停倒计时按钮事件
+            const pauseCountdownBtn = document.getElementById('pause-countdown-btn');
+            if (pauseCountdownBtn) {
+                pauseCountdownBtn.addEventListener('click', pauseCountdown);
+            }
+            
+            // 倒计时输入框事件，用于实时更新计时器显示
+            const countdownHours = document.getElementById('countdown-hours');
+            const countdownMinutes = document.getElementById('countdown-minutes');
+            const countdownSeconds = document.getElementById('countdown-seconds');
+            
+            // 移除updatePreviewCountdown事件监听器，使用updateCountdown代替
+            if (countdownHours) {
+                countdownHours.addEventListener('input', updateCountdown);
+            }
+            if (countdownMinutes) {
+                countdownMinutes.addEventListener('input', updateCountdown);
+            }
+            if (countdownSeconds) {
+                countdownSeconds.addEventListener('input', updateCountdown);
+            }
+            
+            // 正计时按钮事件监听器
+            const startStopwatchBtn = document.getElementById('start-stopwatch-btn');
+            if (startStopwatchBtn) {
+                startStopwatchBtn.addEventListener('click', startStopwatch);
+            }
+            
+            const resetStopwatchBtn = document.getElementById('reset-stopwatch-btn');
+            if (resetStopwatchBtn) {
+                resetStopwatchBtn.addEventListener('click', resetStopwatch);
+            }
+            
+            const pauseStopwatchBtn = document.getElementById('pause-stopwatch-btn');
+            if (pauseStopwatchBtn) {
+                pauseStopwatchBtn.addEventListener('click', pauseStopwatch);
+            }
         }
         
         // 更新制作人员名单按钮文本（已废弃，不再使用）
@@ -1134,7 +1838,7 @@
         // 检查新版本并显示更新内容
         function checkForUpdates() {
             // 当前版本
-            const currentVersion = '4.0.13';
+            const currentVersion = '4.1.0';
             
             // 从update.json获取最新版本
             fetch('/update.json', {
@@ -1196,11 +1900,66 @@
                 msToggle.checked = savedShowMs === 'true';
             }
             
-            // 启动时间更新
-            updateTime();
-            // 根据毫秒显示设置调整更新频率
-            const updateInterval = msToggle.checked ? 1 : 1000;
-            window.timeInterval = setInterval(updateTime, updateInterval);
+            // 从本地存储加载功能状态和倒计时时长
+            currentFeature = localStorage.getItem('currentFeature') || 'time';
+            const savedDuration = localStorage.getItem('countdownDuration');
+            if (savedDuration !== null) {
+                countdownDuration = parseInt(savedDuration);
+            }
+            
+            // 根据功能状态启动相应的更新
+            if (currentFeature === 'time') {
+                // 启动北京时间更新
+                updateTime();
+                const updateInterval = msToggle.checked ? 1 : 1000;
+                window.timeInterval = setInterval(updateTime, updateInterval);
+                // 显示日期信息
+                dateInfo.style.display = 'block';
+                // 隐藏所有设置区域
+                const countdownSettingArea = document.getElementById('countdown-setting-area');
+                const stopwatchSettingArea = document.getElementById('stopwatch-setting-area');
+                if (countdownSettingArea) {
+                    countdownSettingArea.style.display = 'none';
+                }
+                if (stopwatchSettingArea) {
+                    stopwatchSettingArea.style.display = 'none';
+                }
+            } else if (currentFeature === 'countdown') {
+                // 初始化倒计时，默认显示0:0:0.000
+                countdownEndTime = null;
+                updateCountdown();
+                const updateInterval = msToggle.checked ? 100 : 1000;
+                window.timeInterval = setInterval(updateCountdown, updateInterval);
+                // 隐藏日期信息
+                dateInfo.style.display = 'none';
+                // 显示倒计时设置区域，隐藏正计时设置区域
+                const countdownSettingArea = document.getElementById('countdown-setting-area');
+                const stopwatchSettingArea = document.getElementById('stopwatch-setting-area');
+                if (countdownSettingArea) {
+                    countdownSettingArea.style.display = 'block';
+                    // 加载保存的倒计时时长
+                    loadCountdownDuration();
+                }
+                if (stopwatchSettingArea) {
+                    stopwatchSettingArea.style.display = 'none';
+                }
+            } else if (currentFeature === 'stopwatch') {
+                // 初始化正计时，显示0:0:0.000
+                resetStopwatch();
+                const updateInterval = msToggle.checked ? 100 : 1000;
+                window.timeInterval = setInterval(updateStopwatch, updateInterval);
+                // 隐藏日期信息
+                dateInfo.style.display = 'none';
+                // 显示正计时设置区域，隐藏倒计时设置区域
+                const stopwatchSettingArea = document.getElementById('stopwatch-setting-area');
+                const countdownSettingArea = document.getElementById('countdown-setting-area');
+                if (stopwatchSettingArea) {
+                    stopwatchSettingArea.style.display = 'block';
+                }
+                if (countdownSettingArea) {
+                    countdownSettingArea.style.display = 'none';
+                }
+            }
             
             // 初始化事件监听器
             initEventListeners();
@@ -1277,14 +2036,14 @@
         function manualCheckUpdate() {
             // 本地默认更新内容，确保即使网络失败也能显示
             const defaultUpdateData = {
-                version: '4.0.13',
+                version: '4.1.0',
                 lastUpdate: '2025-12-08',
                 changelog: [
-                    '将设置功能改为按钮弹大窗口',
-                    '修复了更新内容无法显示的问题',
-                    '添加了默认更新数据，确保始终显示更新内容',
-                    '优化了设置面板布局和样式',
-                    '修复了分类切换时的状态管理问题'
+                    "修复关于页面显示问题",
+                    "添加学校模式和考试模式功能",
+                    "删除返回桌面功能",
+                    "优化学校模式逻辑，关闭时自动关闭考试模式",
+                    "简化学校模式界面，移除解释文字"
                 ]
             };
             
