@@ -1,6 +1,6 @@
 // Service Worker for 北京时间自动更新
 // 版本号，每次更新时需要修改这个值
-const CACHE_NAME = 'beijing-time-v4.0.8';
+const CACHE_NAME = 'beijing-time-v4.0.13';
 const urlsToCache = [
   '/',
   '/北京时间.html',
