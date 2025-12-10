@@ -58,11 +58,13 @@ function showSettingsModal() {
         <style>
             .modal-content {
                 min-width: 800px;
-                min-height: 500px;
+                max-height: 80vh;
+                overflow-y: auto;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
+                padding: 20px;
             }
             .settings-nav-item:hover {
                 background-color: rgba(255, 255, 255, 0.1) !important;
