@@ -1277,7 +1277,7 @@
                 ${successSection}
                 <p>请输入访问密码</p>
                 <div class="input-container">
-                    <input type="password" id="password-input" placeholder="机会有限">
+                    <input type="password" id="password-input" placeholder="请输入PassWord">
                 </div>
                 <div class="error-msg" id="password-error" style="display: none;"></div>
                 <div class="btn-container">
@@ -1402,18 +1402,22 @@
                             <h3 style="margin-bottom: 25px; color: #fff; font-size: 18px;">个性化</h3>
                             <div class="option-item" style="margin-bottom: 25px;">
                                 <span class="option-label" style="font-size: 16px; margin-bottom: 15px; display: block;">颜色主题</span>
-                                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
                                     <button class="theme-btn ${localStorage.getItem('theme') === 'default' ? 'active' : ''}" data-theme="default" style="padding: 15px; border: none; border-radius: 5px; cursor: pointer; transition: all 0.3s; background-color: #000; color: #fff; font-size: 16px;">默认（黑色）</button>
+                                    ${localStorage.getItem('schoolMode') === 'true' ? '' : `
                                     <button class="theme-btn ${localStorage.getItem('theme') === 'red' ? 'active' : ''}" data-theme="red" style="padding: 15px; border: none; border-radius: 5px; cursor: pointer; transition: all 0.3s; background-color: #ff4444; color: #fff; font-size: 16px;">红色</button>
                                     <button class="theme-btn ${localStorage.getItem('theme') === 'green' ? 'active' : ''}" data-theme="green" style="padding: 15px; border: none; border-radius: 5px; cursor: pointer; transition: all 0.3s; background-color: #44ff44; color: #000; font-size: 16px;">绿色</button>
                                     <button class="theme-btn ${localStorage.getItem('theme') === 'blue' ? 'active' : ''}" data-theme="blue" style="padding: 15px; border: none; border-radius: 5px; cursor: pointer; transition: all 0.3s; background-color: #4444ff; color: #fff; font-size: 16px;">蓝色</button>
                                     <button class="theme-btn ${localStorage.getItem('theme') === 'yellow' ? 'active' : ''}" data-theme="yellow" style="padding: 15px; border: none; border-radius: 5px; cursor: pointer; transition: all 0.3s; background-color: #ffff44; color: #000; font-size: 16px;">黄色</button>
                                     <button class="theme-btn ${localStorage.getItem('theme') === 'purple' ? 'active' : ''}" data-theme="purple" style="padding: 15px; border: none; border-radius: 5px; cursor: pointer; transition: all 0.3s; background-color: #ff44ff; color: #000; font-size: 16px;">紫色</button>
+                                    `}
                                     <button class="theme-btn ${localStorage.getItem('theme') === 'white' ? 'active' : ''}" data-theme="white" style="padding: 15px; border: none; border-radius: 5px; cursor: pointer; transition: all 0.3s; background-color: #ffffff; color: #000; font-size: 16px;">白色</button>
                                     ${localStorage.getItem('schoolMode') === 'true' ? '' : '<button class="theme-btn ' + (localStorage.getItem('theme') === 'gradient' ? 'active' : '') + '" data-theme="gradient" style="padding: 15px; border: none; border-radius: 5px; cursor: pointer; transition: all 0.3s; background: linear-gradient(-45deg, #ff4444, #44ff44, #4444ff, #ffff44, #ff44ff); background-size: 400% 400%; animation: gradientAnimation 8s ease infinite; color: #fff; font-size: 16px; text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);">渐变色</button>'}
                                 </div>
+
                             </div>
                         </div>
+                        ${localStorage.getItem('schoolMode') === 'true' ? `<div class="school-mode-hint" style="color: #aaa; font-size: 14px; margin-top: 25px; text-align: center; padding: 15px; background-color: rgba(50, 50, 50, 0.5); border-radius: 8px; border: 1px solid #333;">当前处于学校模式，更多主题已隐藏</div>` : ''}
                         
                         <!-- 关于设置 -->
                         <div id="settings-about" class="settings-content" style="display: none;">
@@ -1511,12 +1515,62 @@
                     }
                 }
                 
-                // 直接更新渐变色主题按钮的显示状态
+                // 如果启动学校模式，检查当前主题，如果不是默认或白色，自动切换到默认主题
+                if (isSchoolMode) {
+                    const currentTheme = localStorage.getItem('theme') || 'default';
+                    if (currentTheme !== 'default' && currentTheme !== 'white') {
+                        // 切换到默认主题
+                        applyTheme('default');
+                        
+                        // 更新主题按钮的激活状态
+                        const personalizationContent = document.getElementById('settings-personalization');
+                        if (personalizationContent) {
+                            const themeButtons = personalizationContent.querySelectorAll('.theme-btn');
+                            themeButtons.forEach(btn => {
+                                btn.classList.remove('active');
+                            });
+                            const defaultThemeBtn = personalizationContent.querySelector('.theme-btn[data-theme="default"]');
+                            if (defaultThemeBtn) {
+                                defaultThemeBtn.classList.add('active');
+                            }
+                        }
+                    }
+                }
+                
+                // 直接更新主题按钮的显示状态
                 const personalizationContent = document.getElementById('settings-personalization');
                 if (personalizationContent) {
-                    const gradientThemeBtn = personalizationContent.querySelector('.theme-btn[data-theme="gradient"]');
-                    if (gradientThemeBtn) {
-                        gradientThemeBtn.style.display = isSchoolMode ? 'none' : 'block';
+                    // 获取所有主题按钮
+                    const colorThemeButtons = personalizationContent.querySelectorAll('.theme-btn');
+                    colorThemeButtons.forEach(btn => {
+                        const theme = btn.dataset.theme;
+                        if (theme === 'default' || theme === 'white') {
+                            // 始终显示黑白主题
+                            btn.style.display = 'block';
+                        } else {
+                            // 彩色主题在学校模式下隐藏，关闭学校模式时显示
+                            btn.style.display = isSchoolMode ? 'none' : 'block';
+                        }
+                    });
+                    
+                    // 更新学校模式提示文字
+                    let schoolModeHint = personalizationContent.querySelector('.school-mode-hint');
+                    if (isSchoolMode) {
+                        if (!schoolModeHint) {
+                            schoolModeHint = document.createElement('div');
+                            schoolModeHint.className = 'school-mode-hint';
+                            schoolModeHint.style.cssText = 'color: #aaa; font-size: 14px; margin-top: 25px; text-align: center; padding: 15px; background-color: rgba(50, 50, 50, 0.5); border-radius: 8px; border: 1px solid #333;';
+                            schoolModeHint.textContent = '当前处于学校模式，更多主题已隐藏';
+                            
+                            // 插入到个性化设置区域底部
+                            personalizationContent.appendChild(schoolModeHint);
+                        }
+                    } else {
+                        // 关闭学校模式时，移除所有学校模式提示
+                        const allSchoolModeHints = document.querySelectorAll('.school-mode-hint');
+                        allSchoolModeHints.forEach(hint => {
+                            hint.remove();
+                        });
                     }
                 }
                 
@@ -1721,6 +1775,12 @@
                     element.style.display = 'none';
                 }
             });
+            
+            // 隐藏自定义提醒内容
+            const customReminder = document.getElementById('custom-reminder-display');
+            if (customReminder) {
+                customReminder.style.display = 'none';
+            }
             
             // 确保设置按钮可见
             const settingsBtn = document.getElementById('settings-btn');
@@ -2213,6 +2273,12 @@
                     element.style.display = '';
                 }
             });
+            
+            // 重新显示自定义提醒内容
+            const customReminder = document.getElementById('custom-reminder-display');
+            if (customReminder) {
+                customReminder.style.display = 'block';
+            }
             
             // 根据当前功能显示相应的设置区域
             if (currentFeature === 'countdown') {
