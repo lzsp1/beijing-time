@@ -1169,7 +1169,9 @@
                         <div class="loading-dot"></div>
                         <div class="loading-dot"></div>
                         <div class="loading-dot"></div>
-                    </div>
+                                ${localStorage.getItem('schoolMode') === 'true' ? `<div class="school-mode-hint" style="color: #aaa; font-size: 14px; margin-top: 25px; text-align: center; padding: 15px; background-color: rgba(50, 50, 50, 0.5); border-radius: 8px; border: 1px solid #333;">当前处于学校模式，更多主题已隐藏</div>` : ''}
+
+                            </div>
                 </div>
             `;
             showModal(content);
@@ -1417,7 +1419,6 @@
 
                             </div>
                         </div>
-                        ${localStorage.getItem('schoolMode') === 'true' ? `<div class="school-mode-hint" style="color: #aaa; font-size: 14px; margin-top: 25px; text-align: center; padding: 15px; background-color: rgba(50, 50, 50, 0.5); border-radius: 8px; border: 1px solid #333;">当前处于学校模式，更多主题已隐藏</div>` : ''}
                         
                         <!-- 关于设置 -->
                         <div id="settings-about" class="settings-content" style="display: none;">
@@ -1426,7 +1427,7 @@
                                 <button class="btn btn-blue" style="width: 100%; padding: 12px; font-size: 16px;" id="show-creator-btn">制作人员名单</button>
                             </div>
                             <div class="option-item" style="text-align: center; margin-top: 30px;">
-                                <div style="color: #aaa; font-size: 14px; margin-bottom: 15px;">v4.2.0</div>
+                                <div style="color: #aaa; font-size: 14px; margin-bottom: 15px;">v5.0.0</div>
                                 <a href="https://beijingfortime.wordpress.com/" target="_blank" rel="noopener noreferrer" style="font-size: 14px; opacity: 0.8; text-decoration: underline; color: #aaa; margin: 0 10px;">官网</a>
                                 <a href="https://www.kdocs.cn/l/cfQq66T7hCf5" target="_blank" rel="noopener noreferrer" style="font-size: 14px; opacity: 0.8; text-decoration: underline; color: #aaa; margin: 0 10px;">使用说明</a>
                             </div>
@@ -2554,7 +2555,7 @@
         // 检查新版本并显示更新内容
         function checkForUpdates() {
             // 当前版本
-            const currentVersion = '4.2.0';
+            const currentVersion = '5.0.0';
             
             // 从update.json获取最新版本
             fetch('/update.json', {
@@ -2565,42 +2566,40 @@
             })
                 .then(response => response.json())
                 .then(data => {
-                    // 检查是否有新版本
-                    if (data.version !== currentVersion) {
-                        // 检查是否已经显示过该版本的更新内容
-                        const shownVersions = JSON.parse(localStorage.getItem('shownVersions') || '[]');
-                        if (!shownVersions.includes(data.version)) {
-                            // 显示更新内容
-                            let changelogHTML = '<ul style="list-style-type: none; padding: 0; margin: 20px 0;">';
-                            data.changelog.forEach(item => {
-                                changelogHTML += `<li style="margin: 8px 0; padding-left: 20px; position: relative;">\n`;
-                                changelogHTML += `  <span style="position: absolute; left: 0; color: #4CAF50;">•</span>\n`;
-                                changelogHTML += `  ${item}\n`;
-                                changelogHTML += `</li>`;
-                            });
-                            changelogHTML += '</ul>';
-                            
-                            const content = `
-                                <h2 style="text-align: left;">版本 ${data.version} 更新内容</h2>
-                                <div style="margin: 20px 0; text-align: left;">
-                                    ${changelogHTML}
-                                </div>
-                                <div style="color: #aaa; font-size: 14px; margin-top: 20px; text-align: left;">
-                                    最后更新：${data.lastUpdate}
-                                </div>
-                                <div class="btn-container" style="margin-top: 30px; justify-content: flex-start;">
-                                    <button class="btn btn-green" id="update-content-ok">确定</button>
-                                </div>
-                            `;
-                            showModal(content);
-                            
-                            // 确定按钮事件
-                            document.getElementById('update-content-ok').addEventListener('click', hideModal);
-                            
-                            // 记录已显示的版本
-                            shownVersions.push(data.version);
-                            localStorage.setItem('shownVersions', JSON.stringify(shownVersions));
-                        }
+                    // 检查是否已经显示过该版本的更新内容
+                    const shownVersions = JSON.parse(localStorage.getItem('shownVersions') || '[]');
+                    if (!shownVersions.includes(data.version)) {
+                        // 显示更新内容
+                        let changelogHTML = '<ul style="list-style-type: none; padding: 0; margin: 20px 0;">';
+                        data.changelog.forEach(item => {
+                            changelogHTML += `<li style="margin: 8px 0; padding-left: 20px; position: relative;">\n`;
+                            changelogHTML += `  <span style="position: absolute; left: 0; color: #4CAF50;">•</span>\n`;
+                            changelogHTML += `  ${item}\n`;
+                            changelogHTML += `</li>`;
+                        });
+                        changelogHTML += '</ul>';
+                        
+                        const content = `
+                            <h2 style="text-align: left;">版本 ${data.version} 更新内容</h2>
+                            <div style="color: #4CAF50; font-size: 16px; margin: 10px 0; text-align: left;">新版本已更新完成啦🎇</div>
+                            <div style="margin: 20px 0; text-align: left;">
+                                ${changelogHTML}
+                            </div>
+                            <div style="color: #aaa; font-size: 14px; margin-top: 20px; text-align: left;">
+                                最后更新：${data.lastUpdate}
+                            </div>
+                            <div class="btn-container" style="margin-top: 30px; justify-content: flex-start;">
+                                <button class="btn btn-green" id="update-content-ok">确定</button>
+                            </div>
+                        `;
+                        showModal(content);
+                        
+                        // 确定按钮事件
+                        document.getElementById('update-content-ok').addEventListener('click', hideModal);
+                        
+                        // 记录已显示的版本
+                        shownVersions.push(data.version);
+                        localStorage.setItem('shownVersions', JSON.stringify(shownVersions));
                     }
                 })
                 .catch(error => {
@@ -2688,6 +2687,9 @@
             
             // 初始化全屏按钮文本
             updateFullscreenBtn();
+            
+            // 检查更新
+            checkForUpdates();
             
             // 设置每天0点自动重置刷新次数的定时器
             setupDailyResetTimer();
@@ -2778,15 +2780,12 @@
         function manualCheckUpdate() {
             // 本地默认更新内容，确保即使网络失败也能显示
             const defaultUpdateData = {
-                version: '4.2.0',
+                version: '5.0.0',
                 lastUpdate: '2025-12-11',
                 changelog: [
-                    "修复考试模式UI刷新后显示异常问题",
-                    "增大考试结束弹窗，几乎覆盖整个页面",
-                    "考试结束页面添加正计时显示",
-                    "增大考试内容显示并向下调整位置",
-                    "优化考试模式下的UI显示效果",
-                    "修复部分功能的样式和布局问题"
+                    "使用说明正式上线",
+                    "个性化主题上线",
+                    "对学校模式进行优化"
                 ]
             };
             
