@@ -1426,13 +1426,13 @@
                                 <a href="https://beijingfortime.wordpress.com/" target="_blank" rel="noopener noreferrer" style="font-size: 14px; opacity: 0.8; text-decoration: underline; color: #aaa; margin: 0 10px;">官网</a>
                                 <a href="https://www.kdocs.cn/l/cfQq66T7hCf5" target="_blank" rel="noopener noreferrer" style="font-size: 14px; opacity: 0.8; text-decoration: underline; color: #aaa; margin: 0 10px;">使用说明</a>
                             </div>
-                            <div style="text-align: center; color: #888; font-size: 12px; margin-top: 20px;">
+                            ${localStorage.getItem('schoolMode') === 'true' ? '' : `<div style="text-align: center; color: #888; font-size: 12px; margin-top: 20px;">
                                 此程序免费使用，
                                 <a href="https://ifdian.net/order/create?plan_id=b7c1d2cecf5b11ef88ad52540025c377&product_type=0&remark=&affiliate_code=" 
                                    target="_blank" rel="noopener noreferrer" style="color: #4CAF50; text-decoration: underline;">
                                     赞助作者
                                 </a>
-                            </div>
+                            </div>`}
                         </div>
                     </div>
                 </div>
@@ -1508,6 +1508,38 @@
                         if (examModeBtn) {
                             examModeBtn.textContent = '启动考试模式';
                         }
+                    }
+                }
+                
+                // 直接更新渐变色主题按钮的显示状态
+                const personalizationContent = document.getElementById('settings-personalization');
+                if (personalizationContent) {
+                    const gradientThemeBtn = personalizationContent.querySelector('.theme-btn[data-theme="gradient"]');
+                    if (gradientThemeBtn) {
+                        gradientThemeBtn.style.display = isSchoolMode ? 'none' : 'block';
+                    }
+                }
+                
+                // 直接更新赞助入口的显示状态
+                const aboutContent = document.getElementById('settings-about');
+                if (aboutContent) {
+                    // 检查是否已经存在赞助入口
+                    let sponsorshipSection = aboutContent.querySelector('div:nth-child(4)');
+                    if (sponsorshipSection && sponsorshipSection.innerHTML.includes('赞助作者')) {
+                        // 如果已存在，根据学校模式状态显示/隐藏
+                        sponsorshipSection.style.display = isSchoolMode ? 'none' : 'block';
+                    } else if (!isSchoolMode && !sponsorshipSection) {
+                        // 如果不存在且学校模式关闭，创建赞助入口
+                        sponsorshipSection = document.createElement('div');
+                        sponsorshipSection.style.cssText = 'text-align: center; color: #888; font-size: 12px; margin-top: 20px;';
+                        sponsorshipSection.innerHTML = `
+                            此程序免费使用，
+                            <a href="https://ifdian.net/order/create?plan_id=b7c1d2cecf5b11ef88ad52540025c377&product_type=0&remark=&affiliate_code=" 
+                               target="_blank" rel="noopener noreferrer" style="color: #4CAF50; text-decoration: underline;">
+                                赞助作者
+                            </a>
+                        `;
+                        aboutContent.appendChild(sponsorshipSection);
                     }
                 }
             });
